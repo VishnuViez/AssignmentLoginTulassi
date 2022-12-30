@@ -85,6 +85,9 @@ public class Details extends AppCompatActivity implements LocationListener, Adap
                         // Display the location in the TextView
                         activityDetailsBinding.addressEditText.setText(String.format("Current address: %f,%f",
                                 location.getLatitude(), location.getLongitude()));
+                        SQLiteDatabase db = DB.getWritableDatabase();
+                        //String sql = "INSERT INTO location (latitude, longitude) VALUES (?)";
+                        //db.execSQL(sql, new String[]{String.valueOf(location.getLatitude()), String.valueOf(location.getLongitude())});
                     }
                 });
 

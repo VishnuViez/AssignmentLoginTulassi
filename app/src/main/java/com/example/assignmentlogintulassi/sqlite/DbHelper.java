@@ -20,6 +20,7 @@ public class DbHelper extends SQLiteOpenHelper {
     private final static String tableusers = "users";
     private final static String tableprofession = "professions";
     private final static String radiooptions = "radiooptions";
+    private final static String locationtable = "location";
     private final static String imagetable = "image";
     private final static String videotable = "video";
 
@@ -32,6 +33,7 @@ public class DbHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase MyDB) {
         MyDB.execSQL("create Table " +tableusers+" (username text primary key, password text, name text, phone text)");
         MyDB.execSQL("create Table " +tableprofession+" (options text)");
+        MyDB.execSQL("create Table " +locationtable+" (latitude text, longitude text)");
         MyDB.execSQL("create Table " +radiooptions+" (radio text)");
         MyDB.execSQL("create Table " +imagetable+" (image byte)");
         MyDB.execSQL("create Table " +videotable+" (video)");
@@ -119,6 +121,11 @@ public class DbHelper extends SQLiteOpenHelper {
 
         Cursor cursor = db.rawQuery(selectQuery, null);
 
+        return cursor;
+    }
+    public Cursor getlocation(){
+        SQLiteDatabase sqLiteDatabase = this.getReadableDatabase();
+        Cursor cursor = sqLiteDatabase.rawQuery("Select * from locationtable " , null);
         return cursor;
     }
 

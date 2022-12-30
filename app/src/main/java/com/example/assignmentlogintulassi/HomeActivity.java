@@ -26,12 +26,14 @@ import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
 public class HomeActivity extends AppCompatActivity {
     private ActivityHomeBinding activityHomeBinding;
     private Bundle dataBundle,data;
+
     // Hold a reference to the current animator,
     // so that it can be canceled mid-way.
     private Animator currentAnimator;
@@ -46,6 +48,8 @@ public class HomeActivity extends AppCompatActivity {
     private String user;
     private String email;
     private String phone;
+    private String latitude;
+    private String longitude;
     private String pass;
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -57,6 +61,7 @@ public class HomeActivity extends AppCompatActivity {
             activityHomeBinding.ivUpload.setVisibility(View.VISIBLE);
         }
         db = this.openOrCreateDatabase("details.db", Context.MODE_PRIVATE,null);
+
         //creating table for storing image
         db.execSQL("create table if not exists imagetable ( image blob )");
         activityHomeBinding.fabAdd.setOnClickListener(new View.OnClickListener() {
@@ -90,6 +95,20 @@ public class HomeActivity extends AppCompatActivity {
         activityHomeBinding.nameEditText.setText(user);
         activityHomeBinding.emailEditText.setText(email);
         activityHomeBinding.phoneEditText.setText(phone);
+/*
+
+        Cursor locationcursor = DB.getlocation();
+        if (cursor.moveToFirst()) {
+            String latitude = locationcursor.getString(0);
+            String longitude = locationcursor.getString(1);
+            this.latitude = latitude;
+            this.longitude = longitude;
+        }
+        if(DB.getlocation()!=null){
+            activityHomeBinding.locationEditText.setVisibility(View.VISIBLE);
+        }
+
+        activityHomeBinding.locationEditText.setText(latitude, TextView.BufferType.valueOf(longitude));*/
 
         //imageView
         // Hook up clicks on the thumbnail views.
