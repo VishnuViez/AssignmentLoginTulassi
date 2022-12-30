@@ -16,86 +16,117 @@ public class DbHelper extends SQLiteOpenHelper {
     private static final int DATABASE_VERSION = 1;
 
     // Database Name
-    private static final String DATABASE_NAME = "login_details.db";
+    private static final String DATABASE_NAME = "details.db";
     private final static String tableusers = "users";
-    private final static String tableprofession = "profession";
-    private final static String title = "title";
-
-
-    private final static String colusers = "username";
-    private final static String colpass = "password";
-    private final static String colname = "name";
-    private final static String colphone = "phone";
-
-
-    public String getTableprofession() {
-        SQLiteDatabase db = getReadableDatabase();
-        Cursor cursor = db.rawQuery("Select * from "+tableprofession, null, null);
-        while (cursor.moveToNext()) {
-            String[] values = {"Web Developer", "Computer Support Specialist", "Computer Hardware Engineer", "Computer & Information Research Scientist",
-                    "Big Data Engineer", "Software Systems Developer", "Blockchain Developer", "Software Applications Developer", "Computer Network Architect",
-                    "Information Security Analyst", "Computer Systems Analyst", "Database Administrator", "Network & Computer System Administrators"};
-            cursor.close();
-        }
-        return getTableprofession();
-    }
+    private final static String tableprofession = "professions";
+    private final static String radiooptions = "radiooptions";
+    private final static String imagetable = "image";
+    private final static String videotable = "video";
 
     public DbHelper(Context context) {
-        super(context, "login_details.db", null, 1);
+        super(context, "details.db", null, 1);
     }
 
     //creating tables
     @Override
     public void onCreate(SQLiteDatabase MyDB) {
         MyDB.execSQL("create Table " +tableusers+" (username text primary key, password text, name text, phone text)");
-        MyDB.execSQL("create Table " +tableprofession+" (title text primary key)");
+        MyDB.execSQL("create Table " +tableprofession+" (options text)");
+        MyDB.execSQL("create Table " +radiooptions+" (radio text)");
+        MyDB.execSQL("create Table " +imagetable+" (image byte)");
+        MyDB.execSQL("create Table " +videotable+" (video)");
+        //MyDB.execSQL("create Table " +options+" (options)");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase MyDB, int i, int i1) {
         MyDB.execSQL("drop Table if exists " + tableusers);
         MyDB.execSQL("drop Table if exists " + tableprofession);
+        MyDB.execSQL("drop Table if exists " + radiooptions);
+        MyDB.execSQL("drop Table if exists " + imagetable);
+        MyDB.execSQL("drop Table if exists " + videotable);
         onCreate(MyDB);
     }
 
-    public void insertProfessionValues(Data data) {
+    public void insertProfessionValues() {
+        //String query = "INSERT INTO " + tableprofession;
         SQLiteDatabase db = getWritableDatabase();
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(title, data.getTitle());
-        db.insert(tableprofession, null, contentValues);
-
+        ContentValues values = new ContentValues();
+        values.put("title", "manager");
+        values.put("title", "developer");
+        values.put("title", "associate");
+        values.put("title", "intern");
+        values.put("title", "tester");
+        values.put("title", "researcher");
+        //db.execSQL(query, new String[]{tableprofession});
+        db.insert(tableprofession, null, values);
+        db.close();
     }
 
-    public Cursor getProfessionValues() {
-        SQLiteDatabase db = getReadableDatabase();
-        /*for (String value : values) {
-            ContentValues contentValues = new ContentValues();
-            contentValues.put("Web Developer", value);
-            contentValues.put("Computer Support Specialist", value);
-            contentValues.put("Computer Hardware Engineer", value);
-            contentValues.put("Computer & Information Research Scientist", value);
-            contentValues.put("Big Data Engineer", value);
-            contentValues.put("Software Systems Developer", value);
-            contentValues.put("Blockchain Developer", value);
-            contentValues.put("Software Applications Developer", value);
-            contentValues.put("Computer Network Architect", value);
-            contentValues.put("Information Security Analyst", value);
-            contentValues.put("Computer Systems Analyst", value);
-            contentValues.put("Database Administrator", value);
-            contentValues.put("Network & Computer System Administrators", value);*/
-       // }
-            return db.query(tableprofession, null, null, null, null, null, null);
+    /**
+     * Getting all labels
+     * returns list of labels
+     *
+     * @return*/
+    public List<String> getAllLabels() {
+        List<String> list = new ArrayList<String>();
+
+        // Select All Query
+        String selectQuery = "SELECT  * FROM " + tableprofession;
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("manager",tableprofession);
+        values.put("developer",tableprofession);
+        values.put("associate",tableprofession);
+        values.put("intern",tableprofession);
+        values.put("tester",tableprofession);
+        values.put("researcher",tableprofession);
+        Cursor cursor = db.rawQuery(selectQuery, null);//selectQuery,selectedArguments
+
+        // looping through all rows and adding to list
+        if (cursor.moveToFirst()) {
+            do {
+                list.add(cursor.getString(1));//adding 2nd column data
+            } while (cursor.moveToNext());
+        }
+        // closing connection
+        cursor.close();
+        db.close();
+        // returning lables
+        return list;
+    }
+
+    public void addListItem(ArrayList<String> listItem) {
+        SQLiteDatabase db = this.getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        listItem.add("manager");
+        for (int i = 0; i < listItem.size(); i++) {
+
+            Log.e("value inserting==", "" + listItem.get(i));
+            values.put(tableprofession, listItem.get(i));
+            db.insert(tableprofession, null, values);
 
         }
 
+        db.close(); // Closing database connection
+    }
 
+    public Cursor getListItem() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        String selectQuery = "Select * from " + tableprofession;
+
+        Cursor cursor = db.rawQuery(selectQuery, null);
+
+        return cursor;
+    }
 
     public Cursor fetch(){
         SQLiteDatabase sqLiteDatabase = this.getReadableDatabase();
         //String selectQuery = "select * from " + tableusers + "order by " + colusers + " desc";
         Cursor cursor = sqLiteDatabase.rawQuery("Select * from users " , null);
         return cursor;
-
     }
 
     public Boolean insertData(String username, String password, String name, String phone){
@@ -134,18 +165,21 @@ public class DbHelper extends SQLiteOpenHelper {
     }
 
     @SuppressLint("Range")
-    public List<String> getProfessionsListData(){
+    public List<String> getProfessionsListData(String title){
+        SQLiteDatabase db = this.getWritableDatabase();
         List<String> labels = new ArrayList<String>();
-        String selectQuery = "SELECT  * FROM " + tableprofession;
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery(selectQuery, null);
+        ContentValues cv = new ContentValues();
+        cv.put("web",title);
+        cv.put("",title);
+        cv.put("",title);
+        cv.put("",title);
+        cv.put("",title);
+        cv.put("",title);
+        cv.put("",title);
+        cv.put("",title);
+        labels.add(title);
+        long result = db.insert("profession",null,cv);
         // looping through all rows and adding to list
-        if (cursor.moveToFirst()) {
-            do {
-                labels.add(cursor.getString(0));
-            } while (cursor.moveToNext());
-        }
-        cursor.close();
         db.close();
 
         return labels;

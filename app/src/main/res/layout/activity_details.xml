@@ -171,6 +171,7 @@
 
         <TextView
             android:id="@+id/addressEditText"
+            android:textIsSelectable="true"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
@@ -266,7 +267,7 @@
 
 
         <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/registerBtn"
+            android:id="@+id/saveBtn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="20dp"

@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
 
 import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -13,10 +14,13 @@ import com.example.assignmentlogintulassi.databinding.LoginBinding;
 import com.example.assignmentlogintulassi.sqlite.Data;
 import com.example.assignmentlogintulassi.sqlite.DbHelper;
 
+import java.util.ArrayList;
+
 public class LoginActivity extends AppCompatActivity {
     private LoginBinding loginActivityBinding;
 
     DbHelper DB;
+    ArrayList<String> ProfessionsList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +41,7 @@ public class LoginActivity extends AppCompatActivity {
             public void onClick(View view) {
                 String email = loginActivityBinding.emailEditText.getText().toString();
                 String pass = loginActivityBinding.passwordEditText.getText().toString();
-                DB.insertProfessionValues(new Data("Web Developer"));
+              /*  DB.insertProfessionValues(new Data("Web Developer"));
                 DB.insertProfessionValues(new Data("Computer Support Specialist"));
                 DB.insertProfessionValues(new Data("Computer Hardware Engineer"));
                 DB.insertProfessionValues(new Data("Computer & Information Research Scientist"));
@@ -49,7 +53,7 @@ public class LoginActivity extends AppCompatActivity {
                 DB.insertProfessionValues(new Data("Information Security Analyst"));
                 DB.insertProfessionValues(new Data("Computer Systems Analyst"));
                 DB.insertProfessionValues(new Data("Database Administrator"));
-                DB.insertProfessionValues(new Data("Network & Computer System Administrators"));
+                DB.insertProfessionValues(new Data("Network & Computer System Administrators"));*/
                 if(email.equals("")||pass.equals(""))
                     Toast.makeText(LoginActivity.this,"Fields cannot be empty",Toast.LENGTH_SHORT).show();
                 else{

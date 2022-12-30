@@ -11,8 +11,12 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.media.session.MediaController;
@@ -21,6 +25,8 @@ import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.ImageView;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 public class HomeActivity extends AppCompatActivity {
@@ -35,8 +41,8 @@ public class HomeActivity extends AppCompatActivity {
     // very frequently.
     private int shortAnimationDuration;
 
-
     private DbHelper DB;
+    private SQLiteDatabase db;
     private String user;
     private String email;
     private String phone;
@@ -47,7 +53,12 @@ public class HomeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         activityHomeBinding = DataBindingUtil.setContentView(this, R.layout.activity_home);
-
+        if(activityHomeBinding.ivUpload!=null){
+            activityHomeBinding.ivUpload.setVisibility(View.VISIBLE);
+        }
+        db = this.openOrCreateDatabase("details.db", Context.MODE_PRIVATE,null);
+        //creating table for storing image
+        db.execSQL("create table if not exists imagetable ( image blob )");
         activityHomeBinding.fabAdd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -55,6 +66,13 @@ public class HomeActivity extends AppCompatActivity {
                 startActivity(fabIntent);
             }
         });
+            Cursor c = db.rawQuery("select * from imagetable", null);
+            if (c.moveToNext()) {
+                byte[] image = c.getBlob(0);
+                Bitmap bmp = BitmapFactory.decodeByteArray(image, 0, image.length);
+                activityHomeBinding.ivUpload.setImageBitmap(bmp);
+                Toast.makeText(this, "Done", Toast.LENGTH_SHORT).show();
+            }
 
         DB = new DbHelper(HomeActivity.this);
 
@@ -68,6 +86,7 @@ public class HomeActivity extends AppCompatActivity {
             this.email = email;
             this.phone = phone;
         }
+
         activityHomeBinding.nameEditText.setText(user);
         activityHomeBinding.emailEditText.setText(email);
         activityHomeBinding.phoneEditText.setText(phone);
@@ -77,7 +96,7 @@ public class HomeActivity extends AppCompatActivity {
         activityHomeBinding.ivUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //zoomImageFromThumb(activityHomeBinding.ivUpload, DB.fetch().getColumnIndex());
+                //zoomImageFromThumb(activityHomeBinding.ivUpload);
             }
         });
 
@@ -85,6 +104,7 @@ public class HomeActivity extends AppCompatActivity {
         shortAnimationDuration = getResources().getInteger(
                 android.R.integer.config_shortAnimTime);
     }
+
     private void zoomImageFromThumb(final View thumbView, int imageResId) {
         // If there's an animation in progress, cancel it
         // immediately and proceed with this one.
@@ -221,7 +241,6 @@ public class HomeActivity extends AppCompatActivity {
                 currentAnimator = set;
             }
         });
-
 
     //videoview
         activityHomeBinding.videoView.setOnClickListener(new View.OnClickListener() {

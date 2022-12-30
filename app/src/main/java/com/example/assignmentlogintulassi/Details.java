@@ -14,8 +14,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -38,6 +41,11 @@ import com.example.assignmentlogintulassi.sqlite.DbHelper;
 import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.ui.PlacePicker;
 
+import android.location.Location;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.Task;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,75 +53,47 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class Details extends AppCompatActivity implements LocationListener {
+public class Details extends AppCompatActivity implements LocationListener, AdapterView.OnItemSelectedListener {
     private static final int PLACE_PICKER_REQUEST = 1;
     private static final int PICK_IMAGE_REQUEST = 2;
     private static final int REQUEST_VIDEO_CAPTURE = 3;
     private ActivityDetailsBinding activityDetailsBinding;
     private DbHelper DB;
     Context context;
-    LocationManager locationManager;
     String address;
+    String[] options = {"Manager", "Frontend Developer", "Backend Developer", "Designer"};
+    byte[] image;
+    ContentValues values = new ContentValues();
+    Bitmap selectedImage;
 
+    @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         activityDetailsBinding = DataBindingUtil.setContentView(this, R.layout.activity_details);
+        FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         DB = new DbHelper(Details.this);
-
+        activityDetailsBinding.spinner.setPrompt("Select an option");
+        activityDetailsBinding.spinner.setOnItemSelectedListener(this);
+        //loading spinner data from database
         loadSpinnerData();
-        activityDetailsBinding.genderRB.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(RadioGroup group, int checkedId) {
-                RadioButton selectedRadioButton = group.findViewById(checkedId);
-                String selectedRadioButtonValue = selectedRadioButton.getText().toString();
-                // Open a connection to the SQLite database
-                SQLiteDatabase db = new DbHelper(context).getWritableDatabase();
-                // Insert the selected radio button value into the "options" table
-                ContentValues values = new ContentValues();
-                values.put("selected_option", selectedRadioButtonValue);
-                db.insert("options", null, values);
-                // Close the connection to the database
-                db.close();
-            }
-        });
-        //address click listener
-        activityDetailsBinding.getCurrentLocation.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                getLocation();
-                //activityDetailsBinding.addressEditText.setText(address);
-            }
-        });
 
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, location -> {
+                    // Got last known location. In some rare situations this can be null.
+                    if (location != null) {
+                        // Display the location in the TextView
+                        activityDetailsBinding.addressEditText.setText(String.format("Current address: %f,%f",
+                                location.getLatitude(), location.getLongitude()));
+                    }
+                });
 
         if (ContextCompat.checkSelfPermission(Details.this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(Details.this,new String[]{
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(Details.this, new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION
-            },100);
+            }, 100);
         }
-
-        //address click listener
-        activityDetailsBinding.getCurrentLocation.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                getLocation();
-                //activityDetailsBinding.addressEditText.setText(address);
-            }
-        });
-
-        activityDetailsBinding.spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                String selectedItem = (String) adapterView.getItemAtPosition(i);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-
-            }
-        });
 
         //Image button click listener
         activityDetailsBinding.uploadImageBtn.setOnClickListener(new View.OnClickListener() {
@@ -132,6 +112,34 @@ public class Details extends AppCompatActivity implements LocationListener {
                 startActivityForResult(intent, REQUEST_VIDEO_CAPTURE);
             }
         });
+        activityDetailsBinding.saveBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Details.this, HomeActivity.class);
+
+                activityDetailsBinding.genderRB.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(RadioGroup group, int checkedId) {
+                        RadioButton selectedRadioButton = group.findViewById(checkedId);
+                        String selectedRadioButtonValue = selectedRadioButton.getText().toString();
+                        // Open a connection to the SQLite database
+                        SQLiteDatabase db = DB.getWritableDatabase();
+                        String sql = "INSERT INTO radiooptions (radio) VALUES (?)";
+                        db.execSQL(sql, new String[]{selectedRadioButtonValue});
+                        Log.d("RadioGroupInsert", "Inserted value: " + selectedRadioButtonValue);
+                        // Insert the selected radio button value into the "options" table
+                        values.put("radio", selectedRadioButtonValue);
+                        db.insert("radiooptions", null, values);
+                        // Close the connection to the database
+                        db.close();
+                    }
+                });
+
+
+                startActivity(intent);
+            }
+        });
+
     }
 
     @Override
@@ -139,22 +147,41 @@ public class Details extends AppCompatActivity implements LocationListener {
         super.onActivityResult(requestCode, resultCode, data);
 
         //Address picker
-        if (requestCode == PLACE_PICKER_REQUEST && resultCode == RESULT_OK) {
+      /*  if (requestCode == PLACE_PICKER_REQUEST && resultCode == RESULT_OK) {
             Place place = PlacePicker.getPlace(this, data);
             String address = String.valueOf(place.getAddress());
             // Set the address in the EditText
-            activityDetailsBinding.addressEditText.setText(address);
-        }
+
+          //  activityDetailsBinding.addressEditText.setText(address);
+        }*/
         //Image picker
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
-            Uri uri = data.getData();
+            Uri selectedImage = data.getData();
 
             try {
-                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedImage);
                 activityDetailsBinding.ivUpload.setVisibility(View.VISIBLE);
                 activityDetailsBinding.ivUpload.setImageBitmap(bitmap);
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            //image.compress(Bitmap.CompressFormat.PNG, 100, stream);
+            byte[] imageByteArray = stream.toByteArray();
+
+            SQLiteDatabase db = DB.getWritableDatabase();
+            // Add the image to the ContentValues object
+            values.put("image", String.valueOf(image));
+
+            // Insert the values into the table
+            db.insert("imagetable", null, values);
+            String sql = "INSERT INTO imagetable (image) VALUES (?)";
+            db.execSQL(sql, new byte[][]{imageByteArray});
+            try {
+                db.execSQL(sql, new byte[][]{imageByteArray});
+            } catch (SQLException e) {
+                Log.e("SaveButton", "Error saving image: " + e.getMessage());
             }
         }
         if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK) {
@@ -171,9 +198,10 @@ public class Details extends AppCompatActivity implements LocationListener {
 
             // Connect to the database and execute an INSERT query
             DB.getWritableDatabase();
-            ContentValues values = new ContentValues();
+
             values.put("video", videoData);
-            DB.insertVideo("table_name", null, values);
+            DB.insertVideo("insertvideo", null, values);
+
 
             // Show a message when the upload is successful
             activityDetailsBinding.tvUploadVideo.setVisibility(View.VISIBLE);
@@ -184,37 +212,17 @@ public class Details extends AppCompatActivity implements LocationListener {
     //Profession spinner function
     private void loadSpinnerData() {
         DbHelper db = new DbHelper(getApplicationContext());
-        List<String> values = db.getProfessionsListData();
-        ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, values);
+        db.getReadableDatabase();
+        List<String> labels = db.getAllLabels();
+        ArrayAdapter<String> dataAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, options);
         dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         activityDetailsBinding.spinner.setAdapter(dataAdapter);
     }
 
-    //Address picker function
-    @SuppressLint("MissingPermission")
-    private void getLocation() {
-
-        try {
-            locationManager = (LocationManager) getApplicationContext().getSystemService(LOCATION_SERVICE);
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,5000,5,Details.this);
-
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-
-    }
     @Override
     public void onLocationChanged(Location location) {
         Toast.makeText(this, ""+location.getLatitude()+","+location.getLongitude(), Toast.LENGTH_SHORT).show();
-        Geocoder geocoder = new Geocoder(Details.this, Locale.getDefault());
-        List<Address> addresses = null;
-        try {
-            addresses = geocoder.getFromLocation(location.getLatitude(),location.getLongitude(),1);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        address = addresses.get(0).getAddressLine(0);
-        activityDetailsBinding.addressEditText.setText(address);
+        activityDetailsBinding.addressEditText.setText(String.format("Latitude: %f, Longitude: %f", location.getLatitude(), location.getLongitude()));
 
     }
 
@@ -252,6 +260,21 @@ public class Details extends AppCompatActivity implements LocationListener {
             byteBuffer.write(buffer, 0, len);
         }
         return byteBuffer.toByteArray();
+    }
+
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        String label = parent.getItemAtPosition(position).toString();
+        // Get the selected item from the Spinner
+        String selectedItem = parent.getItemAtPosition(position).toString();
+        activityDetailsBinding.spinner.setPrompt("Select an option");
+        // Set the text of the TextView to the selected item
+        activityDetailsBinding.label.setText(selectedItem);
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {
+
     }
 
 }
